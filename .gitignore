@@ -5,3 +5,6 @@ __MACOSX
 # SwiftPM
 .swiftpm
 .build
+
+# Build
+dist
