@@ -5,6 +5,9 @@ import PackageDescription
 
 let package = Package(
     name: "GameStub",
+    platforms: [
+        .macOS(.v14)
+    ],
     products: [
         .executable(name: "runner", targets: ["Runner"]),
         .executable(name: "launcher", targets: ["Launcher"])
