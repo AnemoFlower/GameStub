@@ -18,25 +18,25 @@ LAUNCHER_BIN := $(BUILD_DIR)/launcher
 all: bundle
 
 build:
-    swift build -c $(CONFIG)
+	swift build -c $(CONFIG)
 
 bundle: build
-    @test -f "$(INFO_PLIST)" || (echo "Missing: $(INFO_PLIST)" && exit 1)
-    @test -f "$(RUNNER_BIN)" || (echo "Missing: $(RUNNER_BIN) (did you name the target Runner?)" && exit 1)
-    @test -f "$(LAUNCHER_BIN)" || (echo "Missing: $(LAUNCHER_BIN) (did you name the target Launcher?)" && exit 1)
+	@test -f "$(INFO_PLIST)" || (echo "Missing: $(INFO_PLIST)" && exit 1)
+	@test -f "$(RUNNER_BIN)" || (echo "Missing: $(RUNNER_BIN) (did you name the target Runner?)" && exit 1)
+	@test -f "$(LAUNCHER_BIN)" || (echo "Missing: $(LAUNCHER_BIN) (did you name the target Launcher?)" && exit 1)
 
-    rm -rf "$(APP_DIR)"
-    mkdir -p "$(MACOS_DIR)" "$(RESOURCES_DIR)"
+	rm -rf "$(APP_DIR)"
+	mkdir -p "$(MACOS_DIR)" "$(RESOURCES_DIR)"
 
-    cp "$(INFO_PLIST)" "$(CONTENTS_DIR)/Info.plist"
+	cp "$(INFO_PLIST)" "$(CONTENTS_DIR)/Info.plist"
 
-    cp "$(RUNNER_BIN)" "$(MACOS_DIR)/runner"
-    chmod +x "$(MACOS_DIR)/runner"
+	cp "$(RUNNER_BIN)" "$(MACOS_DIR)/runner"
+	chmod +x "$(MACOS_DIR)/runner"
 
-    cp "$(LAUNCHER_BIN)" "$(RESOURCES_DIR)/launcher"
-    chmod +x "$(RESOURCES_DIR)/launcher"
+	cp "$(LAUNCHER_BIN)" "$(RESOURCES_DIR)/launcher"
+	chmod +x "$(RESOURCES_DIR)/launcher"
 
 clean:
-    swift package clean
-    rm -rf "$(DIST_DIR)"
-    
+	swift package clean
+	rm -rf "$(DIST_DIR)"
+	
