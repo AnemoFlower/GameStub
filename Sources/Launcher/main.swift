@@ -87,7 +87,7 @@ func startSocket() {
     defer { close(clientSocket) }
     
     var lastMessages: [String] = []
-    var javaQuitReceived: Bool = false
+    var exitCode: Int32?
     
     while true {
         var buffer: [UInt8] = .init(repeating: 0, count: 16384)
@@ -106,17 +106,24 @@ func startSocket() {
                     log("Failed to decode UTF-8 message (bytesRead=\(bytesRead))", error: true)
                 }
             } else if buffer[0] == 0xFF {
-                javaQuitReceived = true
+                let exitCodeSize: Int = MemoryLayout<Int32>.size
+                guard bytesRead >= 1 + exitCodeSize else {
+                    log("Incomplete exit code message (bytesRead=\(bytesRead))", error: true)
+                    exit(1)
+                }
+                var decodedExitCode: Int32 = 0
+                withUnsafeMutableBytes(of: &decodedExitCode) { destination in
+                    destination.copyBytes(from: buffer[1..<(1 + exitCodeSize)])
+                }
+                exitCode = decodedExitCode
             }
         } else if bytesRead == 0 {
-            if lastMessages.contains(where: { $0.contains("#@!@# Game crashed!") }) {
-                log("Game crashed (Minecraft crash log marker detected)")
-                exit(1)
-            } else if !javaQuitReceived {
-                log("JVM terminated unexpectedly (unexpected socket EOF)")
+            guard let exitCode else {
+                log("JVM holder terminated unexpectedly (unexpected socket EOF)", error: true)
                 exit(1)
             }
-            exit(0)
+            log("Game exited with exit code \(exitCode)")
+            exit(exitCode)
         } else {
             perror("read")
             exit(1)
@@ -142,12 +149,22 @@ while true {
     }
 }
 
-var runnerArguments: [String] = Array(arguments.dropFirst())
-runnerArguments.insert(FileManager.default.currentDirectoryPath, at: 0)
-runnerArguments.insert(
-    "-javaagent:\(appBundleURL.appending(path: "Contents/Resources/log-bridge-agent.jar").path)=\(socketPath)",
-    at: 2
-)
+var runnerArguments: [String] = [
+    "--holder",
+    "--working-directory", FileManager.default.currentDirectoryPath,
+    "--socket-path", socketPath,
+    "--args"
+] + arguments.dropFirst()
+
+#if DEBUG_PROCESS_LAUNCH
+
+let process: Process = .init()
+process.executableURL = appBundleURL.appending(path: "Contents/MacOS/runner")
+process.arguments = runnerArguments
+process.currentDirectoryURL = .init(filePath: FileManager.default.currentDirectoryPath)
+try process.run()
+
+#else
 
 let configuration: NSWorkspace.OpenConfiguration = .init()
 configuration.createsNewApplicationInstance = true
@@ -171,6 +188,7 @@ NSWorkspace.shared.openApplication(at: appBundleURL, configuration: configuratio
             signal(SIGINT, SIG_IGN)
             
             let handler: () -> Void = {
+                if application.isTerminated { return }
                 kill(pid, SIGTERM)
                 exit(0)
             }
@@ -192,4 +210,7 @@ NSWorkspace.shared.openApplication(at: appBundleURL, configuration: configuratio
         }
     }
 }
+
+#endif
+
 dispatchMain()

@@ -13,15 +13,15 @@ BUILD_DIR := .build/$(CONFIG)
 RUNNER_BIN := $(BUILD_DIR)/runner
 LAUNCHER_BIN := $(BUILD_DIR)/launcher
 
-AGENT_BUILD_DIR := LogBridgeAgent/build/libs
+SWIFT_DEFINES ?=
+SWIFT_FLAGS := $(foreach d,$(SWIFT_DEFINES),-Xswiftc -D -Xswiftc $(d))
 
 .PHONY: all build bundle clean
 
 all: bundle
 
 build:
-	swift build -c $(CONFIG)
-	cd LogBridgeAgent && ./gradlew build
+	swift build -c $(CONFIG) $(SWIFT_FLAGS)
 
 bundle: build
 	@test -f "$(INFO_PLIST)" || (echo "Missing: $(INFO_PLIST)" && exit 1)
@@ -39,10 +39,7 @@ bundle: build
 	cp "$(LAUNCHER_BIN)" "$(RESOURCES_DIR)/launcher"
 	chmod +x "$(RESOURCES_DIR)/launcher"
 
-	cp $(AGENT_BUILD_DIR)/*.jar "$(RESOURCES_DIR)/log-bridge-agent.jar"
-
 clean:
 	swift package clean
 	rm -rf "$(DIST_DIR)"
-	cd LogBridgeAgent && ./gradlew clean
 	
